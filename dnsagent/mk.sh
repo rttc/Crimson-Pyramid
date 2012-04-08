@@ -29,7 +29,7 @@ if [ ! -f inilib/ini.o ] ; then
   (cd inilib && ./mk.sh)
 fi
 
-cflist='agent config'
+cflist='agent config updates'
 oflist=''
 for cfile in $cflist ; do
   if [ ! -f "${cfile}.c" ] ; then

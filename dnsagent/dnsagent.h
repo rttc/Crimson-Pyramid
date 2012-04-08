@@ -1,5 +1,5 @@
 /*
- * Crimson Pyramid SQL Agent
+ * Crimson Pyramid DNS Agent
  * Copyright (C) 2012 Matt Harris
  *
  *    This program is free software: you can redistribute it and/or modify
@@ -55,5 +55,12 @@ struct _confData
 };
 typedef struct _confData Config;
 
+/* agent.c */
+
+/* config.c */
 extern Config *read_config(const char *filename);
 extern void free_config(Config *c);
+
+/* updates.c */
+extern void run_updates(int srvid);
+

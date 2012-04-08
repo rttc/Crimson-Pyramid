@@ -1,5 +1,5 @@
 /*
- * Crimson Pyramid SQL Agent
+ * Crimson Pyramid DNS Agent
  * Copyright (C) 2012 Matt Harris
  *
  *    This program is free software: you can redistribute it and/or modify
@@ -44,7 +44,6 @@ struct dbstat
 static int db_init(void);
 static int db_deinit(void);
 static inline char *fmtdt(const char *style, size_t len);
-static void run_updates(int sid);
 static int db_getsrvid(void);
 static void sig_end(int s);
 static void sig_hup(int s);
@@ -91,7 +90,7 @@ int main(int argc, char **argv)
 		{
 			case 'V':
 			{
-				fprintf(stdout, "Crimson Pyramid SQL Agent version %lu\n", VERSION);
+				fprintf(stdout, "Crimson Pyramid DNS Agent version %lu\n", VERSION);
 				fflush(stdout);
 				return(0);
 				break;
@@ -321,11 +320,6 @@ int db_deinit()
 	DBhandle = (MYSQL *)NULL;
 
 	return(1);
-}
-
-void run_updates(int sid)
-{
-	return;
 }
 
 int db_getsrvid()
