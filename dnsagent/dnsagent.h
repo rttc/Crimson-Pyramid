@@ -17,7 +17,7 @@
  *
  */
 
-#define VERSION				2012032501
+#define VERSION				2012040801
 
 #undef CONFIG_FILE
 
