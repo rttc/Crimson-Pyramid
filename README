@@ -1,0 +1,11 @@
+Crimson Pyramid is a project of the Red Triangle Technology Collective.
+This repository contains the server agents.  The backup system and web management system components are stored in separate repositories also on github.
+
+sqlagent = the MySQL database creation/destruction agent (runs on mysql servers)
+dnsagent = the DNS server agent which maintains zonefiles (runs on dns servers)
+unixagent = the agent which creates unix user accounts (runs on all Linux/UNIX servers)
+webagent = the Apache virtual host maintenance agent (runs on web servers)
+
+Any number of these agents can run on any server.  You can even run all of the agents and the web interface on a single server if that's all you have.
+
+For further details on the web, visit http://www.redtriangletc.org/crimsonpyramid.php
