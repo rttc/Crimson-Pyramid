@@ -33,7 +33,51 @@
 #include <sys/syslog.h>
 #include "dnsagent.h"
 
+struct _ACLEnt
+{
+	unsigned int nent;
+	char **ent;
+};
+struct _ACLList
+{
+	unsigned int nacl;
+	char **acls;
+	struct _ACLEnt **entries;
+};
+
+typedef struct _ACLList ACLList;
+
+static ACLList *gather_acls(void);
+static char **gather_domains(int sid);
+
 void run_updates(int srvid)
 {
+	char **domains;
+	ACLList *acls;
+
+	acls = gather_acls();
+	if (acls)
+	{
+		print_acls(acls);
+	}
+
 	return;
+}
+
+ACLList *gather_acls()
+{
+	char query[QUERYLEN];
+	ACLList *al;
+
+	al = (ACLList *)malloc(sizeof(ACLList));
+	if (!al)
+	{
+		return((ACLList *)NULL);
+	}
+	
+}
+
+char **gather_domains(int sid)
+{
+
 }
