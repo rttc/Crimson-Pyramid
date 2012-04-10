@@ -52,6 +52,12 @@ struct _confData
 	short svcdaemon;
 	char svcsrvid[16];
 	int waittime;
+
+	char ncf_masters[512];
+	char ncf_slaves[512];
+	char ncf_acls[512];
+	char ncd_masters[512];
+	char ncd_slaves[512];
 };
 typedef struct _confData Config;
 

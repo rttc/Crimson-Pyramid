@@ -55,6 +55,12 @@ Config *read_config(const char *filename)
 	sprintf(active_conf->dbfile, "/var/lib/mysql/mysql.sock");
 	sprintf(active_conf->dbcapath, "/usr/local/etc/ca.crt");
 
+	sprintf(active_conf->ncf_masters, "/var/named/masters.conf");
+	sprintf(active_conf->ncf_slaves, "/var/named/slaves.conf");
+	sprintf(active_conf->ncf_acls, "/var/named/acls.conf");
+	sprintf(active_conf->ncd_masters, "/var/named/");
+	sprintf(active_conf->ncd_slaves, "/var/named/");
+
 	if (ini_parse(filename, hdlr_config, (void *)active_conf) != 0)
 	{
 		fprintf(stdout, "Failed loading %s: %s\n", filename, strerror(errno));
@@ -215,6 +221,46 @@ int hdlr_config(void *pc, const char *s, const char *n, const char *v)
 		{
 			return(0);
 		}
+	}
+	else if ((strcasecmp(s, "named") == 0) && (strcasecmp(n, "mastersconf") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ncf_masters, v, 512);
+	}
+	else if ((strcasecmp(s, "named") == 0) && (strcasecmp(n, "slavesconf") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ncf_slaves, v, 512);
+	}
+	else if ((strcasecmp(s, "named") == 0) && (strcasecmp(n, "aclconf") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ncf_acls, v, 512);
+	}
+	else if ((strcasecmp(s, "named") == 0) && (strcasecmp(n, "mastersdir") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ncd_masters, v, 512);
+	}
+	else if ((strcasecmp(s, "named") == 0) && (strcasecmp(n, "slavesdir") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ncd_slaves, v, 512);
 	}
 	else
 	{
