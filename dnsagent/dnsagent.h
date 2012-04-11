@@ -22,6 +22,8 @@
 #undef CONFIG_FILE
 
 #define QUERYLEN			1024
+#define HNLEN				256
+#define IPLEN				16
 
 #define stringtoint(x)			(int)strtol((x), (char **)NULL, 10)
 #define stringtolong(x)			strtol((x), (char **)NULL, 10)
@@ -61,6 +63,24 @@ struct _confData
 };
 typedef struct _confData Config;
 
+#define ZE_ERROR			0
+#define ZE_NS				1
+#define ZE_A				2
+#define ZE_TXT				3
+#define ZE_MX				4
+#define ZE_CNAME			5
+#define ZE_AAAA				6
+#define ZE_SRV				7
+
+struct _zoneentry
+{
+	unsigned short type;
+	char *hostdata;			/* NS, A, MX, CNAME, SRV, TXT */
+	char *txtdata;			/* MX, CNAME, SRV, TXT */
+	char ipaddr[IPLEN];		/* A */
+};
+typedef struct _zoneentry ZoneEntry;
+
 /* agent.c */
 
 /* config.c */
@@ -70,3 +90,4 @@ extern void free_config(Config *c);
 /* updates.c */
 extern void run_updates(int srvid);
 
+/* zone.c */
