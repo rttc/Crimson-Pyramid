@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					if (dlvl(2)) { fprintf(stdout, "Loaded configuration file from: %s\n", optarg);
+					if (dlvl(2)) { fprintf(stdout, "Loaded configuration file from: %s\n", optarg); }
 					snprintf(selectedconf, 512, "%s", optarg);
 				}
 				break;
@@ -293,25 +293,26 @@ void sig_hup(int s)
 		if (!my_conf)
 		{
 			if (rundaemon) { syslog(LOG_CRIT, "Could not read config file \"%s\" which was previously loaded.  Failing.", selectedconf); }
+			else { fprintf(stdout, "Could not read config file \"%s\" which was previously loaded.  Failing.\n", selectedconf); }
 			exit(1);
 		}
 	}
 	if (dodb)
 	{
-		if (db_init())
+		if (!db_init())
 		{
 			if (dlvl(1) && DBhandle)
 			{
-				if (rundaemon) { syslog(LOG_ALERT, "Database connection failed: %s", mysql_error(DBhandle)); }
+				if (rundaemon) { syslog(LOG_CRIT, "Database connection failed: %s", mysql_error(DBhandle)); }
 				else { fprintf(stdout, "Database connection failed: %s\n", mysql_error(DBhandle)); }
+				db_deinit();
 			}
 			else if (dlvl(1))
 			{
-				if (rundaemon) { syslog(LOG_ALERT, "Database connection failed: UNKNOWN"); }
+				if (rundaemon) { syslog(LOG_CRIT, "Database connection failed: UNKNOWN"); }
 				else { fprintf(stdout, "Database connection failed: UNKNOWN\n"); }
 			}
 
-			DBhandle = (MYSQL *)NULL;
 			free_config(my_conf);
 			exit(0);
 		}
