@@ -43,6 +43,8 @@ struct dbstat
 
 static int db_init(void);
 static int db_deinit(void);
+static int ldb_init(void);
+static int ldb_deinit(void);
 static inline char *fmtdt(const char *style, size_t len);
 static void run_updates(int sid);
 static void db_run_creation(MYSQL_RES *dstrres);
@@ -391,6 +393,40 @@ int db_deinit()
 	return(1);
 }
 
+int ldb_init()
+{
+	char tru = 1;
+
+	if (LocalDB) { return(0); }
+
+	LocalDB = mysql_init((MYSQL *)NULL);
+	if (!LocalDB)
+	{
+		return(0);
+	}
+
+	if (dlvl(4) && rundaemon) { syslog(LOG_INFO, "CONNECT: %s@%s", my_conf->ldbuser, my_conf->ldbfile); }
+	else if (dlvl(4)) { fprintf(stdout, "CONNECT: %s@%s\n", my_conf->ldbuser, my_conf->ldbfile); }
+
+	if (!mysql_real_connect(LocalDB, NULL, my_conf->ldbuser, my_conf->ldbpass, "mysql", 0, my_conf->ldbfile, 0))
+	{
+		return(0);
+	}
+
+	mysql_options(LocalDB, MYSQL_OPT_RECONNECT, &tru);
+	return(1);
+}
+
+int ldb_deinit()
+{
+	if (!LocalDB) { return(0); }
+
+	mysql_close(LocalDB);
+	LocalDB = (MYSQL *)NULL;
+
+	return(1);
+}
+
 /*
 users
 +----------------+-----------------------+------+-----+---------+-------+
@@ -447,6 +483,22 @@ void db_run_creation(MYSQL_RES *creares)
 		return;
 	}
 
+	if (!ldb_init())
+	{
+		if (LocalDB)
+		{
+			if (rundaemon) { syslog(LOG_WARNING, "LocalDB connection failed: %s", mysql_error(LocalDB)); }
+			else if (dlvl(1)) { fprintf(stdout, "LocalDB connection failed: %s\n", mysql_error(LocalDB)); }
+			ldb_deinit();
+		}
+		else
+		{
+			if (rundaemon) { syslog(LOG_WARNING, "LocalDB connection failed: unknown"); }
+			else if (dlvl(1)) { fprintf(stdout, "LocalDB connection failed: unknown\n"); }
+		}
+		mysql_free_result(creares);
+		return;
+	}
 	while (data = mysql_fetch_row(creares))
 	{
 		uid = stringtoulong(data[1]);
@@ -463,6 +515,7 @@ void db_run_creation(MYSQL_RES *creares)
 		}
 	}
 	mysql_free_result(creares);
+	ldb_deinit();
 }
 
 void db_run_destruction(MYSQL_RES *dstrres)
@@ -482,6 +535,22 @@ void db_run_destruction(MYSQL_RES *dstrres)
 		return;
 	}
 
+	if (!ldb_init())
+	{
+		if (LocalDB)
+		{
+			if (rundaemon) { syslog(LOG_WARNING, "LocalDB connection failed: %s", mysql_error(LocalDB)); }
+			else if (dlvl(1)) { fprintf(stdout, "LocalDB connection failed: %s\n", mysql_error(LocalDB)); }
+			ldb_deinit();
+		}
+		else
+		{
+			if (rundaemon) { syslog(LOG_WARNING, "LocalDB connection failed: unknown"); }
+			else if (dlvl(1)) { fprintf(stdout, "LocalDB connection failed: unknown\n"); }
+		}
+		mysql_free_result(dstrres);
+		return;
+	}
 	while (data = mysql_fetch_row(dstrres))
 	{
 		uid = stringtoulong(data[1]);
@@ -498,6 +567,7 @@ void db_run_destruction(MYSQL_RES *dstrres)
 		}
 	}
 	mysql_free_result(dstrres);
+	ldb_deinit();
 }
 
 int db_create(char *name, char *owner, unsigned long oid)
@@ -609,7 +679,7 @@ int db_destroy(char *name, char *owner)
 	memset(dropquery, 0, QUERYLEN);
 	snprintf(dropquery, QUERYLEN, "drop database %s_%s", owner, name);
 	if (dlvl(5) && !rundaemon) { fprintf(stdout, "QUERY: %s\n", dropquery); }
-	if (mysql_query(DBhandle, dropquery) != 0)
+	if (mysql_query(LocalDB, dropquery) != 0)
 	{
 		if (dlvl(1) && rundaemon) { syslog(LOG_WARNING, "Error dropping database %s_%s: %s", owner, name, mysql_error(DBhandle)); }
 		else if (dlvl(1)) { fprintf(stdout, "Error dropping database %s_%s: %s\n", owner, name, mysql_error(DBhandle)); }
