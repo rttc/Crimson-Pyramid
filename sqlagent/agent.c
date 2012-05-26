@@ -55,6 +55,8 @@ static void sig_end(int s);
 static void sig_hup(int s);
 
 static MYSQL *DBhandle;
+static MYSQL *LocalDB;
+static char *selectedconf;
 extern char *optarg;
 extern int optind;
 static struct dbstat *stats;
@@ -74,6 +76,10 @@ int main(int argc, char **argv)
 	verbosity = 1;
 	options = 0;
 	my_conf = (Config *)NULL;
+	DBhandle = (MYSQL *)NULL;
+	LocalDB = (MYSQL *)NULL;
+	selectedconf = (char *)NULL;
+
 	signal(SIGTSTP, SIG_IGN);
 	signal(SIGINT, sig_end);
 	signal(SIGTERM, sig_end);
@@ -89,6 +95,14 @@ int main(int argc, char **argv)
 	memset(stats, 0, sizeof(struct dbstat));
 	stats->created = 0;
 	stats->destroyed = 0;
+
+	selectedconf = (char *)malloc(512);
+	if (!selectedconf)
+	{
+		if (dlvl(1)) { fprintf(stdout, "malloc(selectedconf): %s\n", strerror(errno)); }
+		return(-1);
+	}
+	memset(selectedconf, 0, 512);
 
 	while ((go = getopt(argc, argv, "qvlhVc:")) >= 0)
 	{
@@ -113,7 +127,7 @@ int main(int argc, char **argv)
 			}
 			case 'd':
 			{
-				options &= OPTION_DAEMON;
+				options |= OPTION_DAEMON;
 				break;
 			}
 			case 'c':
@@ -129,7 +143,11 @@ int main(int argc, char **argv)
 					fprintf(stdout, "%s -c %s: failed reading config file.\n", argv[0], optarg);
 					return(-1);
 				}
-				if (my_conf && dlvl(2)) { fprintf(stdout, "Loaded configuration file from: %s\n", optarg); }
+				else
+				{
+					if (dlvl(2)) { fprintf(stdout, "Loaded configuration file from: %s\n", optarg);
+					snprintf(selectedconf, 512, "%s", optarg);
+				}
 				break;
 			}
 			case 'h':
@@ -145,10 +163,16 @@ int main(int argc, char **argv)
 	}
 
 #ifdef CONFIG_FILE
-	if (!my_conf) { my_conf = read_config(CONFIG_FILE); if (my_conf && dlvl(2)) { fprintf(stdout, "Loaded configuration file from: %s\n", CONFIG_FILE); } }
+	if (!my_conf)
+	{
+		my_conf = read_config(CONFIG_FILE);
+		if (my_conf)
+		{
+			if (dlvl(2)) { fprintf(stdout, "Loaded configuration file from: %s\n", CONFIG_FILE); }
+			snprintf(selectedconf, 512, "%s", CONFIG_FILE);
+		}
+	}
 #endif
-	if (!my_conf) { my_conf = read_config("sqlagent.ini"); if (my_conf && dlvl(2)) { fprintf(stdout, "Loaded configuration file from: ./sqlagent.ini\n"); } }
-	if (!my_conf) { my_conf = read_config("/etc/sqlagent.ini"); if (my_conf && dlvl(2)) { fprintf(stdout, "Loaded configuration file from: /etc/sqlagent.ini\n"); } }
 
 	if (!my_conf)
 	{
@@ -158,7 +182,7 @@ int main(int argc, char **argv)
 
 	if (my_conf->svcdaemon)
 	{
-		options &= OPTION_DAEMON;
+		options |= OPTION_DAEMON;
 	}
 
 	if (!db_init())
@@ -252,38 +276,50 @@ int main(int argc, char **argv)
 
 void sig_hup(int s)
 {
-	/* Needs a way to keep track of which file I ended up loading my config from before I can re-read it on sighup
-	 * free_config(my_conf);
-	 * read_config(); */
-	if (rundaemon) { syslog(LOG_INFO, "Received SIGHUP, reloading."); }
-	if (!DBhandle)
-	{
-		return;
-	}
-	db_deinit();
-	if (db_init())
-	{
-		if (dlvl(1) && DBhandle)
-		{
-			if (rundaemon) { syslog(LOG_ALERT, "Database connection failed: %s", mysql_error(DBhandle)); }
-			else { fprintf(stdout, "Database connection failed: %s\n", mysql_error(DBhandle)); }
-		}
-		else if (dlvl(1))
-		{
-			if (rundaemon) { syslog(LOG_ALERT, "Database connection failed: UNKNOWN"); }
-			else { fprintf(stdout, "Database connection failed: UNKNOWN\n"); }
-		}
+	unsigned short dodb = 0;
 
-		DBhandle = (MYSQL *)NULL;
+	if (rundaemon) { syslog(LOG_INFO, "Received SIGHUP, reloading."); }
+	if (DBhandle)
+	{
+		db_deinit();
+		dodb = 1;
+	}
+	if (selectedconf && (selectedconf[0] != 0))
+	{
 		free_config(my_conf);
-		exit(0);
+		my_conf = read_config(selectedconf);
+		if (!my_conf)
+		{
+			if (rundaemon) { syslog(LOG_CRIT, "Could not read config file \"%s\" which was previously loaded.  Failing.", selectedconf); }
+			exit(1);
+		}
+	}
+	if (dodb)
+	{
+		if (db_init())
+		{
+			if (dlvl(1) && DBhandle)
+			{
+				if (rundaemon) { syslog(LOG_ALERT, "Database connection failed: %s", mysql_error(DBhandle)); }
+				else { fprintf(stdout, "Database connection failed: %s\n", mysql_error(DBhandle)); }
+			}
+			else if (dlvl(1))
+			{
+				if (rundaemon) { syslog(LOG_ALERT, "Database connection failed: UNKNOWN"); }
+				else { fprintf(stdout, "Database connection failed: UNKNOWN\n"); }
+			}
+
+			DBhandle = (MYSQL *)NULL;
+			free_config(my_conf);
+			exit(0);
+		}
 	}
 }
 
 void sig_end(int s)
 {
 	if (rundaemon) { syslog(LOG_NOTICE, "Received SIG%i, shutting down.", s); }
-	options &= OPTION_TERMINATE;
+	options |= OPTION_TERMINATE;
 	termsigs++;
 	if (termsigs >= 3)
 	{
