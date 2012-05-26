@@ -49,6 +49,7 @@ Config *read_config(const char *filename)
 	active_conf->waittime = 60;
 	sprintf(active_conf->dbname, "cp");
 	sprintf(active_conf->dbfile, "/var/lib/mysql/mysql.sock");
+	sprintf(active_conf->ldbfile, "/var/lib/mysql/mysql.sock");
 	sprintf(active_conf->dbcapath, "/usr/local/etc/ca.crt");
 
 	if (ini_parse(filename, hdlr_config, (void *)active_conf) != 0)
@@ -70,14 +71,40 @@ Config *read_config(const char *filename)
 		if (stat(active_conf->dbfile, sb) != 0)
 		{
 			if (dlvl(1)) { fprintf(stdout, "Socket error: %s: %s\n", active_conf->dbfile, strerror(errno)); }
+			free(active_conf);
 			return((Config *)NULL);
 		}
 		if (!(sb->st_mode & S_IFSOCK))
 		{
 			if (dlvl(1)) { fprintf(stdout, "Socket error: %s: not a valid socket\n", active_conf->dbfile); }
+			free(active_conf);
 			return((Config *)NULL);
 		}
 	}
+	if (active_conf->ldbfile[0] != 0)
+	{
+		sb = (struct stat *)malloc(sizeof(struct stat));
+		if (!sb) { return((Config *)NULL); }
+		if (stat(active_conf->ldbfile, sb) != 0)
+		{
+			if (dlvl(1)) { fprintf(stdout, "Socket error: %s: %s\n", active_conf->ldbfile, strerror(errno)); }
+			free(active_conf);
+			return((Config *)NULL);
+		}
+		if (!(sb->st_mode & S_IFSOCK))
+		{
+			if (dlvl(1)) { fprintf(stdout, "Socket error: %s: not a valid socket\n", active_conf->ldbfile); }
+			free(active_conf);
+			return((Config *)NULL);
+		}
+	}
+	else
+	{
+		free(active_conf);
+		if (dlvl(1)) { fprintf(stdout, "Config file error: local dbfile not specified.\n"); }
+		return((Config *)NULL);
+	}
+
 #ifdef CPSA_SSL
 	if (active_conf->dbcapath[0] != 0)
 	{
@@ -181,6 +208,31 @@ int hdlr_config(void *pc, const char *s, const char *n, const char *v)
 			return(0);
 		}
 		c->dbport = stringtouint(v);
+	}
+	else if ((strcasecmp(s, "localdb") == 0) && (strcasecmp(n, "user") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ldbuser, v, 64);
+	}
+	else if ((strcasecmp(s, "localdb") == 0) && (strcasecmp(n, "pass") == 0))
+	{
+		if (!v)
+		{
+			return(0);
+		}
+		strncpy(c->ldbpass, v, QUERYLEN);
+	}
+	else if ((strcasecmp(s, "localdb") == 0) && (strcasecmp(n, "file") == 0))
+	{
+		if (!v)
+		{
+			memset(c->ldbfile, 0, 512);
+			return(0);
+		}
+		strncpy(c->ldbfile, v, 512);
 	}
 	else if ((strcasecmp(s, "server") == 0) && (strcasecmp(n, "daemon") == 0))
 	{

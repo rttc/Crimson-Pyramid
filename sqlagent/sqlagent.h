@@ -49,6 +49,10 @@ struct _confData
 	char dbfile[512];
 	char dbcapath[512];
 
+	char ldbfile[512];
+	char ldbuser[64];
+	char ldbpass[QUERYLEN];
+
 	short svcdaemon;
 	char svcsrvid[16];
 	int waittime;

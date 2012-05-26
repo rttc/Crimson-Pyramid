@@ -490,7 +490,7 @@ int db_create(char *name, char *owner, unsigned long oid)
 	memset(mkdbquery, 0, QUERYLEN);
 	snprintf(mkdbquery, QUERYLEN, "create database %s", safe_dbname);
 	if (dlvl(5) && !rundaemon) { fprintf(stdout, "QUERY: %s\n", mkdbquery); }
-	if (mysql_query(DBhandle, mkdbquery) != 0)
+	if (mysql_query(LocalDB, mkdbquery) != 0)
 	{
 		if (dlvl(1) && rundaemon) { syslog(LOG_WARNING, "Error creating database %s: %s", dbname, mysql_error(DBhandle)); }
 		else if (dlvl(1)) { fprintf(stdout, "Error creating database %s: %s\n", dbname, mysql_error(DBhandle)); }
@@ -501,7 +501,7 @@ int db_create(char *name, char *owner, unsigned long oid)
 	memset(userquery, 0, QUERYLEN);
 	snprintf(userquery, QUERYLEN, "GRANT ALL PRIVILEGES ON %s . * TO '%s'@'localhost'", dbname, owner);
 	if (dlvl(5) && !rundaemon) { fprintf(stdout, "QUERY: %s\n", userquery); }
-	if (mysql_query(DBhandle, userquery) != 0)
+	if (mysql_query(LocalDB, userquery) != 0)
 	{
 		if (dlvl(1) && rundaemon) { syslog(LOG_WARNING, "Error granting privileges for database %s to %s@localhost: %s", dbname, owner, mysql_error(DBhandle)); }
 		else if (dlvl(1)) { fprintf(stdout, "Error granting privileges for database %s to %s@localhost: %s\n", dbname, owner, mysql_error(DBhandle)); }
@@ -539,7 +539,7 @@ int db_create(char *name, char *owner, unsigned long oid)
 			memset(userquery, 0, QUERYLEN);
 			snprintf(userquery, QUERYLEN, "GRANT ALL PRIVILEGES ON %s . * TO '%s'@'%s'", safe_dbname, owner, assocrow[0]);
 			if (dlvl(5) && !rundaemon) { fprintf(stdout, "QUERY: %s\n", userquery); }
-			if (mysql_query(DBhandle, userquery) != 0)
+			if (mysql_query(LocalDB, userquery) != 0)
 			{
 				if (dlvl(1) && rundaemon) { syslog(LOG_WARNING, "Error granting privileges for database %s to %s@%s: %s", dbname, owner, assocrow[0], mysql_error(DBhandle)); }
 				else if (dlvl(1)) { fprintf(stdout, "Error granting privileges for database %s to %s@%s: %s\n", dbname, owner, assocrow[0], mysql_error(DBhandle)); }
