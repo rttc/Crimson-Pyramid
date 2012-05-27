@@ -271,6 +271,7 @@ int main(int argc, char **argv)
 
 	if (rundaemon) { closelog(); }
 	free_config(my_conf);
+	if (selectedconf) { free(selectedconf); }
 	if (stats) { free(stats); }
 
 	return(0);

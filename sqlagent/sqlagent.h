@@ -19,7 +19,7 @@
 
 #define VERSION				2012040801
 
-#undef CONFIG_FILE
+#define CONFIG_FILE			"/etc/sqlagent.ini"
 
 #define QUERYLEN			1024
 
